@@ -9,12 +9,14 @@ import subprocess
 import sys
 import tempfile
 import wave
+from pytube import YouTube
 
 import ffprobe
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('path', type=str, help='path to video')
+parser.add_argument('--path', type=str, help='path to video')
+parser.add_argument('--url', type=str, help='url to a youtube video')
 parser.add_argument('--threshold-level', type=float, default=-40, help='threshold level in dB')
 parser.add_argument('--threshold-duration', type=float, default=0.2, help='threshold duration in seconds')
 parser.add_argument('--constant', type=float, default=0, help='duration constant transform value')
@@ -127,6 +129,15 @@ def extract_audio(input_filename, output_filename):
 audio_file = tempfile.NamedTemporaryFile(delete=False)
 audio_file.close()
 
+def downloadFile(url):
+    name = YouTube(url).streams.first().download()
+    newname = name.replace(' ','_')
+    os.rename(name,newname)
+    return newname
+
+if args.url != None:
+    args.path = downloadFile(args.url)
+
 print('Extracting audio...')
 extract_audio(args.path, audio_file.name)
 
@@ -201,7 +212,7 @@ print('Processing {} frames...'.format(frames))
 command = [ 'ffmpeg', '-i', args.path, '-f', 'image2pipe', '-pix_fmt', 'rgb24', '-vcodec', 'rawvideo', '-' ]
 decoder = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-decoder.stderr.close()
+#decoder.stderr.close()
 
 video_track = tempfile.NamedTemporaryFile(delete=False)
 video_track.close()
